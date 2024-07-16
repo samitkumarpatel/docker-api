@@ -1,0 +1,53 @@
+from flask import Flask, jsonify
+import docker
+
+app = Flask(__name__)
+client = docker.from_env()
+
+@app.route('/')
+def home():
+    return jsonify({"message": "Docker Node API"})
+
+@app.route('/nodes', methods=['GET'])
+def get_nodes():
+    nodes = client.nodes.list()
+    nodes_info = []
+    for node in nodes:
+        nodes_info.append(node.attrs)
+    return jsonify(nodes_info)
+
+@app.route('/containers', methods=['GET'])
+def get_containers():
+    containers = client.containers.list(all=True)
+    containers_info = []
+    for container in containers:
+        print(container)
+        containers_info.append({
+            'id': container.id,
+            'name': container.name,
+            'image': container.image.tags,
+            'status': container.status,
+            'labels': container.labels
+        })
+
+    return jsonify(containers_info)
+
+@app.route('/containers/<node_id>', methods=['GET'])
+def get_containers_by_node(node_id):
+    containers = client.containers.list(all=True)
+    containers_info = []
+    for container in containers:
+        print( f'container label for container {container.name} are : {container.labels}')
+        if container.labels['com.docker.swarm.node.id'] == node_id:
+            containers_info.append({
+                'id': container.id,
+                'name': container.name,
+                'image': container.image.tags,
+                'status': container.status,
+                'labels': container.labels
+            })
+            #containers_info.append(container.attrs)
+    return jsonify(containers_info)
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5001)
