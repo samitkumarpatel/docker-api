@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>docker-api</title>
+    <style>
+        body {
+            margin-left: auto;
+            margin-right: auto;
+            width: 50%;
+        }
+        .node {
+            flex-direction: column;
+            margin-left: 30px;
+            border-left: 1px solid gray;
+            padding: 10px;
+        }
+        .active {
+            background-color: green;
+            color: aliceblue;
+        }
+        .inactive {
+            background-color: gray;
+            color: white;
+        }
+        p label {
+            text-decoration: underline;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <h1>Docker Swarm!</h1>
+
+        {{ message }}
+        <hr/>
+        <div style="display: flex;">
+            <div v-for="node in nodes" class="node" :class="node.Spec.Availability ? 'active' : 'inactive' ">
+                <p>{{ node.ID}}</p>
+                <hr/>
+                <p><label>HostName:</label> {{ node.Description.Hostname}}</p>
+                <p><label>Role:</label>{{ node.Spec.Role}}</p>
+
+                <p><label>Status:</label> {{ node.Spec.Availability}}</p>
+                <p><label>State :</label> {{ node?.Status?.State}}</p>
+
+                <p><label>Containers:</label></p>
+                
+                <ul>
+                    <li v-for="container in containers[node.ID]">{{container.name}}</li>
+                </ul>
+            </div>
+        </div>
+        
+    </div>
+    
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script>
+        const { createApp, ref, onMounted } = Vue
+        createApp({
+            setup() {
+                const message = ref('Hello vue!')
+                const nodes = ref([])
+                const containers = ref({})
+                const error = ref({})
+
+                const allNodes = () => {
+                    fetch(`/nodes`)
+                     .then(response => {
+                        if(!response.ok)
+                            throw new Error('fetch api error')
+                        return response.json()
+                     })
+                     .then(data => {
+                        nodes.value = data
+                        nodes.value.forEach(element => {
+                           console.log(element.ID)
+                           containersByNode(element.ID) 
+                        });
+                     })
+                     .catch(error => error.value = error)
+                }
+                
+                const containersByNode = (id) => {
+                    fetch(`/containers/${id}`)
+                        .then(response => {
+                            if(!response.ok)
+                                throw new Error('fetch api error')
+                            return response.json()
+                        })
+                        .then(data => containers.value[id]= data)
+                        .catch(error => error.value = error)
+                }
+
+                onMounted(() => {
+                    allNodes()
+                })
+
+                return {
+                    message, nodes, containers
+                }
+
+                
+            }
+        }).mount('#app')
+    </script>
+</body>
+</html>

@@ -5,8 +5,12 @@ app = Flask(__name__)
 client = docker.from_env()
 
 @app.route('/')
-def home():
-    return jsonify({"message": "Docker Node API"})
+def index():
+    return app.send_static_file('index.html')
+
+@app.route('/ping')
+def ping():
+    return jsonify({"message": "PONG"})
 
 @app.route('/nodes', methods=['GET'])
 def get_nodes():
@@ -38,15 +42,15 @@ def get_containers_by_node(node_id):
     containers_info = []
     for container in containers:
         print( f'container label for container {container.name} are : {container.labels}')
-        if container.labels['com.docker.swarm.node.id'] == node_id:
-            containers_info.append({
-                'id': container.id,
-                'name': container.name,
-                'image': container.image.tags,
-                'status': container.status,
-                'labels': container.labels
-            })
-            #containers_info.append(container.attrs)
+        if 'com.docker.swarm.node.id' in container.labels:
+            if container.labels['com.docker.swarm.node.id'] == node_id:
+                containers_info.append({
+                    'id': container.id,
+                    'name': container.name,
+                    'image': container.image.tags,
+                    'status': container.status,
+                    'labels': container.labels
+                })
     return jsonify(containers_info)
 
 if __name__ == '__main__':
