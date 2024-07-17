@@ -25,7 +25,6 @@ def get_containers():
     containers = client.containers.list(all=True)
     containers_info = []
     for container in containers:
-        print(container)
         containers_info.append({
             'id': container.id,
             'name': container.name,
@@ -44,13 +43,14 @@ def get_containers_by_node(node_id):
         print( f'container label for container {container.name} are : {container.labels}')
         if 'com.docker.swarm.node.id' in container.labels:
             if container.labels['com.docker.swarm.node.id'] == node_id:
-                containers_info.append({
-                    'id': container.id,
-                    'name': container.name,
-                    'image': container.image.tags,
-                    'status': container.status,
-                    'labels': container.labels
-                })
+                if container.status == 'running':
+                    containers_info.append({
+                        'id': container.id,
+                        'name': container.name,
+                        'image': container.image.tags,
+                        'status': container.status,
+                        'labels': container.labels
+                    })
     return jsonify(containers_info)
 
 if __name__ == '__main__':
